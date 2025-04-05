@@ -9,6 +9,7 @@
 #include "gpio.h"
 #include "ringbuffer.h"
 #include "usart.h"
+#include "utils.h"
 
 static ring_buffer_t ring_buffer_temp = {0U};
 static uint8_t data_buffer_temp[RING_BUFFER_SIZE] = {0U};
@@ -179,20 +180,6 @@ void cli_backspace(void)
     }
 }
 
-bool cli_strings_match(const char* string1, const char* string2)
-{
-    uint32_t i = 0;
-    for(; string1[i]; i++){
-	if(string1[i] != string2[i]){
-	    return false;
-	}
-    }
-    if(string2[i]){
-	return false;
-    }
-    return true;
-}
-
 bool cli_is_number(const char* string)
 {
     uint32_t i = 0;
@@ -212,15 +199,6 @@ uint32_t cli_strlen(const char* string)
 	i++;
     }
     return i;
-}
-
-uint32_t cli_string_to_number(const char* string)
-{
-    uint32_t result = 0;
-    for(uint8_t i = 0; string[i]; i++){
-	result = (result * 10) + (string[i] - 48);
-    }
-    return result;
 }
 
 uint32_t cli_pow(const uint32_t a, const uint32_t b)
@@ -282,7 +260,7 @@ void cli_parse_command(command_t tokens, char token_length)
     char* args = (token_length > 1) ? tokens[1] : 0;
 
     for(int i = 0; command_table[i].command != 0; i++){
-	if(cli_strings_match(tokens[0], command_table[i].command)){
+	if(utils_strings_match(tokens[0], command_table[i].command)){
             cli_newline();
 	    command_table[i].handler(args);
 	    return;

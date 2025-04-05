@@ -2,7 +2,6 @@
 
 // Firmware headers
 #include "irdecoder.h"
-#include "cli.h"
 
 // Library headers
 #include "rcc.h"
@@ -54,12 +53,6 @@ void irdecoder_process()
 	uint8_t i = ir_to_command[command];
 	if(ir_commands[i].command){
 	    ir_commands[i].command(ir_commands[i].arg);
-	}else{
-	    cli_clear();
-	    cli_home();
-	    cli_print("No function bound to ");
-	    cli_print_number(i);
-	    cli_newline();
 	}
 	command = 0xFF;
     }
@@ -211,15 +204,6 @@ void TIM16_FDCAN_IT0_IRQHandler(void)
 		}
 	    }
 	}
-	// DEBUG PRINT
-	/*cli_print("Command    :");*/
-	/*for(uint8_t i = 0; i < 8; i++){*/
-	/*    cli_print_number(1 & (command >> (7 - i)));*/
-	/*    if(i == 3){*/
-	/*	cli_print(" ");*/
-	/*    }*/
-	/*}*/
-	/*cli_newline();*/
     }
 }
 

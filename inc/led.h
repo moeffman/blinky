@@ -6,6 +6,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+typedef void (*led_message_cb_t)(const char* message);
+
 typedef enum{
     PATTERN_BINARY = 0,
     PATTERN_WAVE = 1,
@@ -35,6 +37,8 @@ void led_init(void);
 
 void led_deinit(void);
 
+void led_set_message_cb(led_message_cb_t led_message_cb);
+
 void led_update(void);
 
 void led_toggle_pattern(const char* args);
@@ -47,11 +51,9 @@ void led_speed_decrease(const char* args);
 
 void led_speed_set(const char* args);
 
-void led_stop(const char* args);
-
-void led_start(const char* args);
-
 void led_toggle(const char* args);
+
+void led_toggle_verbosity(const char* args);
 
 void led_reset(void);
 

@@ -2,7 +2,6 @@
 
 // Firmware headers
 #include "led.h"
-#include "cli.h"
 
 // Library headers
 #include "rcc.h"
@@ -10,8 +9,11 @@
 #include "gpio.h"
 #include "spi.h"
 #include "tim.h"
+#include "utils.h"
 
 static led_state_t led_state = {0};
+static led_message_cb_t message_cb;
+static bool verbose = true;
 
 static void sn_send_data(uint16_t data);
 static void led_binary(uint16_t count);
@@ -19,6 +21,8 @@ static void led_wave(uint16_t count);
 static void led_alternating(uint16_t count);
 static void led_bounce(uint16_t count);
 static void led_refresh_speed(void);
+static void led_stop(const char* args);
+static void led_start(const char* args);
 
 // Animations
 static const uint16_t wave_pattern[8] = {
@@ -130,6 +134,11 @@ void led_deinit(void)
     NVIC->ICER0 = NVIC_TIM14;
 }
 
+void led_set_message_cb(led_message_cb_t led_message_cb)
+{
+    message_cb = led_message_cb;
+}
+
 void led_update(void)
 {
     if(!led_state.active){
@@ -161,10 +170,11 @@ void led_update(void)
 	    }
 	    break;
 	default:
-	    cli_printline("Invalid pattern");
+	    if(message_cb && verbose) message_cb("Invalid pattern");
 	    break;
     }
 }
+
 void led_toggle_pattern(const char* args)
 {
     led_reset();
@@ -174,37 +184,37 @@ void led_toggle_pattern(const char* args)
 	case PATTERN_BINARY:
 	    if(args[0] == '-'){
 		led_state.pattern = PATTERN_BOUNCE;
-		cli_printline("Changing pattern to: Bounce");
+		if(message_cb && verbose) message_cb("Changing pattern to: Bounce");
 	    }else{
 		led_state.pattern = PATTERN_WAVE;
-		cli_printline("Changing pattern to: Wave");
+		if(message_cb && verbose) message_cb("Changing pattern to: Wave");
 	    }
 	    break;
 	case PATTERN_WAVE:
 	    if(args[0] == '-'){
 		led_state.pattern = PATTERN_BINARY;
-		cli_printline("Changing pattern to: Binary");
+		if(message_cb && verbose) message_cb("Changing pattern to: Binary");
 	    }else{
 		led_state.pattern = PATTERN_ALTERNATING;
-		cli_printline("Changing pattern to: Alternating");
+		if(message_cb && verbose) message_cb("Changing pattern to: Alternating");
 	    }
 	    break;
 	case PATTERN_ALTERNATING:
 	    if(args[0] == '-'){
 		led_state.pattern = PATTERN_WAVE;
-		cli_printline("Changing pattern to: Wave");
+		if(message_cb && verbose) message_cb("Changing pattern to: Wave");
 	    }else{
 		led_state.pattern = PATTERN_BOUNCE;
-		cli_printline("Changing pattern to: Bounce");
+		if(message_cb && verbose) message_cb("Changing pattern to: Bounce");
 	    }
 	    break;
 	case PATTERN_BOUNCE:
 	    if(args[0] == '-'){
 		led_state.pattern = PATTERN_ALTERNATING;
-		cli_printline("Changing pattern to: Alternating");
+		if(message_cb && verbose) message_cb("Changing pattern to: Alternating");
 	    }else{
 		led_state.pattern = PATTERN_BINARY;
-		cli_printline("Changing pattern to: Binary");
+		if(message_cb && verbose) message_cb("Changing pattern to: Binary");
 	    }
 	    break;
     }
@@ -212,18 +222,18 @@ void led_toggle_pattern(const char* args)
 
 void led_set_pattern(const char* args)
 {
-    if(cli_strings_match(args, "wave") && led_state.pattern != PATTERN_WAVE){
+    if(utils_strings_match(args, "wave") && led_state.pattern != PATTERN_WAVE){
 	led_state.pattern = PATTERN_WAVE;
-	cli_printline("Changing pattern to: Wave");
-    }else if(cli_strings_match(args, "alternating") && led_state.pattern != PATTERN_ALTERNATING){
+	if(message_cb && verbose) message_cb("Changing pattern to: Wave");
+    }else if(utils_strings_match(args, "alternating") && led_state.pattern != PATTERN_ALTERNATING){
 	led_state.pattern = PATTERN_ALTERNATING;
-	cli_printline("Changing pattern to: Alternating");
-    }else if(cli_strings_match(args, "bounce") && led_state.pattern != PATTERN_BOUNCE){
+	if(message_cb && verbose) message_cb("Changing pattern to: Alternating");
+    }else if(utils_strings_match(args, "bounce") && led_state.pattern != PATTERN_BOUNCE){
 	led_state.pattern = PATTERN_BOUNCE;
-	cli_printline("Changing pattern to: Bounce");
-    }else if(cli_strings_match(args, "binary") && led_state.pattern != PATTERN_BINARY){
+	if(message_cb && verbose) message_cb("Changing pattern to: Bounce");
+    }else if(utils_strings_match(args, "binary") && led_state.pattern != PATTERN_BINARY){
 	led_state.pattern = PATTERN_BINARY;
-	cli_printline("Changing pattern to: Binary");
+	if(message_cb && verbose) message_cb("Changing pattern to: Binary");
     }else{
 	return;
     }
@@ -236,22 +246,22 @@ void led_speed_increase(const char* args)
     switch (led_state.speed) {
 	case SPEED_SLOWER:
 	    led_state.speed = SPEED_SLOW;
-	    cli_printline("Changing speed to: Slow");
+	    if(message_cb && verbose) message_cb("Changing speed to: Slow");
 	    break;
 	case SPEED_SLOW:
 	    led_state.speed = SPEED_NORMAL;
-	    cli_printline("Changing speed to: Normal");
+	    if(message_cb && verbose) message_cb("Changing speed to: Normal");
 	    break;
 	case SPEED_NORMAL:
 	    led_state.speed = SPEED_FAST;
-	    cli_printline("Changing speed to: Fast");
+	    if(message_cb && verbose) message_cb("Changing speed to: Fast");
 	    break;
 	case SPEED_FAST:
 	    led_state.speed = SPEED_FASTER;
-	    cli_printline("Changing speed to: Fastest");
+	    if(message_cb && verbose) message_cb("Changing speed to: Fastest");
 	    break;
 	case SPEED_FASTER:
-	    cli_printline("Already at fastest speed..");
+	    if(message_cb && verbose) message_cb("Already at fastest speed..");
 	    return;
 	    break;
     }
@@ -262,24 +272,24 @@ void led_speed_decrease(const char* args)
 {
     switch (led_state.speed){
 	case SPEED_SLOWER:
-	    cli_printline("Already at slowest speed..");
+	    if(message_cb && verbose) message_cb("Already at slowest speed..");
 	    return;
 	break;
 	case SPEED_SLOW:
 	    led_state.speed = SPEED_SLOWER;
-	    cli_printline("Changing speed to: Slowest");
+	    if(message_cb && verbose) message_cb("Changing speed to: Slowest");
 	break;
 	case SPEED_NORMAL:
 	    led_state.speed = SPEED_SLOW;
-	    cli_printline("Changing speed to: Slow");
+	    if(message_cb && verbose) message_cb("Changing speed to: Slow");
 	break;
 	case SPEED_FAST:
 	    led_state.speed = SPEED_NORMAL;
-	    cli_printline("Changing speed to: Normal");
+	    if(message_cb && verbose) message_cb("Changing speed to: Normal");
 	break;
 	case SPEED_FASTER:
 	    led_state.speed = SPEED_FAST;
-	    cli_printline("Changing speed to: Fast");
+	    if(message_cb && verbose) message_cb("Changing speed to: Fast");
 	break;
     }
     led_refresh_speed();
@@ -287,33 +297,33 @@ void led_speed_decrease(const char* args)
 
 void led_speed_set(const char* args)
 {
-    uint32_t speed = cli_string_to_number(args);
+    uint32_t speed = utils_string_to_number(args);
 
     if(speed < 0 || speed > 5){
-	cli_print("Speed not in bounds (1 - 5)");
+	if(message_cb && verbose) message_cb("Speed not in bounds (1 - 5)");
 	return;
     }
 
     switch(speed){
 	case 1:
 	    led_state.speed = SPEED_SLOWER;
-	    cli_printline("Changing speed to: Slowest");
+	    if(message_cb && verbose) message_cb("Changing speed to: Slowest");
 	break;
 	case 2:
 	    led_state.speed = SPEED_SLOW;
-	    cli_printline("Changing speed to: Slow");
+	    if(message_cb && verbose) message_cb("Changing speed to: Slow");
 	break;
 	case 3:
 	    led_state.speed = SPEED_NORMAL;
-	    cli_printline("Changing speed to: Normal");
+	    if(message_cb && verbose) message_cb("Changing speed to: Normal");
 	break;
 	case 4:
 	    led_state.speed = SPEED_FAST;
-	    cli_printline("Changing speed to: Fast");
+	    if(message_cb && verbose) message_cb("Changing speed to: Fast");
 	break;
 	case 5:
 	    led_state.speed = SPEED_FASTER;
-	    cli_printline("Changing speed to: Faster");
+	    if(message_cb && verbose) message_cb("Changing speed to: Faster");
 	break;
     }
     led_refresh_speed();
@@ -326,19 +336,17 @@ static void led_refresh_speed(void)
     }
 }
 
-void led_stop(const char* args)
+static void led_stop(const char* args)
 {
-    cli_print("Stopping.");
+    if(message_cb && verbose) message_cb("Stopping.");
     led_state.active = false;
     led_reset();
-    cli_newline();
 }
 
-void led_start(const char* args)
+static void led_start(const char* args)
 {
-    cli_print("Starting.");
+    if(message_cb && verbose) message_cb("Starting.");
     led_state.active = true;
-    cli_newline();
 }
 
 void led_toggle(const char* args)
@@ -347,6 +355,17 @@ void led_toggle(const char* args)
 	led_stop(0);
     }else{
 	led_start(0);
+    }
+}
+
+void led_toggle_verbosity(const char* args)
+{
+    if(verbose){
+	if(message_cb) message_cb("Silent mode.");
+	verbose = false;
+    }else{
+	if(message_cb) message_cb("Verbose mode.");
+	verbose = true;
     }
 }
 

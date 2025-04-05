@@ -10,6 +10,7 @@
 #include "syscfg.h"
 #include "cli.h"
 #include "rcc.h"
+#include "utils.h"
 
 // Standard library headers
 #include <stdint.h>
@@ -19,7 +20,7 @@ static void jump_to_bootloader(const char* args);
 static void deinit(void);
 
 static command_callback_t ir_commands[] = {
-    { 0, 0, 0},
+    { 0, 0, led_toggle_verbosity},
     { 1, "binary", led_set_pattern},
     { 2, "wave", led_set_pattern},
     { 3, "alternating", led_set_pattern},
@@ -50,9 +51,10 @@ static const command_entry_t command_table[] = {
     { "s-", led_speed_decrease },
     { "speed", led_speed_set },
     { "s", led_speed_set },
-    { "stop", led_stop },
-    { "start", led_start },
+    { "stop", led_toggle },
+    { "start", led_toggle },
     { "toggle", led_toggle },
+    { "verbosity", led_toggle_verbosity },
     { "flash", jump_to_bootloader },
     { 0, 0 }
 };
@@ -76,6 +78,7 @@ void init(void)
 
     cli_init(main);
     led_init();
+    led_set_message_cb(cli_printline);
     irdecoder_init();
     /*bt_init();*/
 
@@ -154,7 +157,7 @@ bool cli_parse_application_command(command_t tokens, char token_length)
     char* args = (token_length > 1) ? tokens[1] : 0;
 
     for(int i = 0; command_table[i].command != 0; i++){
-	if(cli_strings_match(tokens[0], command_table[i].command)){
+	if(utils_strings_match(tokens[0], command_table[i].command)){
 	    cli_newline();
 	    cli_newline();
 	    command_table[i].handler(args);

@@ -42,10 +42,6 @@ void cli_newline(void);
 
 void cli_backspace(void);
 
-bool cli_strings_match(const char *string1,const char *string2);
-
-bool cli_is_number(const char* string);
-
 uint32_t cli_strlen(const char *string);
 
 uint32_t cli_string_to_number(const char* string);
