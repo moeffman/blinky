@@ -44,17 +44,11 @@ static command_callback_t ir_commands[] = {
 
 static const command_entry_t command_table[] = {
     { "pattern", led_toggle_pattern },
-    { "p", led_toggle_pattern },
-    { "speed+", led_speed_increase },
-    { "s+", led_speed_increase },
-    { "speed-", led_speed_decrease },
-    { "s-", led_speed_decrease },
+    { "faster", led_speed_increase },
+    { "slower", led_speed_decrease },
     { "speed", led_speed_set },
-    { "s", led_speed_set },
-    { "stop", led_toggle },
-    { "start", led_toggle },
-    { "toggle", led_toggle },
-    { "verbosity", led_toggle_verbosity },
+    { "power", led_toggle },
+    { "print", led_toggle_verbosity },
     { "flash", jump_to_bootloader },
     { 0, 0 }
 };
