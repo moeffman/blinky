@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 #Build
 build/
 *.bin
@@ -8,6 +9,8 @@ build/
 #Compile commands
 *.json
 
+=======
+>>>>>>> 3d5da02791b641a9ad2b03b0d4e18af4aa30707c
 # Prerequisites
 *.d
 
