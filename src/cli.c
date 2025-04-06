@@ -74,7 +74,6 @@ void cli_init(int (*restart_function)(void))
     USART2->CR1 |= USART_CR1_UE;
 
     // Enable USART in NVIC
-    /*nvic_enable_irq((uint32_t*)_usart, 2);*/
     NVIC->ISER0 = NVIC_USART2_LPUART2;
 }
 
@@ -97,36 +96,29 @@ void cli_deinit(void)
     USART2->BRR = 0;
 
     // Disable USART in NVIC
-    /*nvic_disable_irq((uint32_t*)_usart, 2);*/
     NVIC->ICER0 = NVIC_USART2_LPUART2;
 }
 
 void cli_clear(void)
 {
-    char* clr = "\033[2J";
-    usart_send_bytes(USART2, (uint8_t*)clr, 4);
+    usart_send_bytes(USART2, (uint8_t*)"\033[2J", 4);
 }
 
 void cli_home(void)
 {
-    char* clr = "\033[H";
-    usart_send_bytes(USART2, (uint8_t*)clr, 3);
+    usart_send_bytes(USART2, (uint8_t*)"\033[H", 3);
 }
 
 void cli_cursive(void)
 {
-    char* clr = "\033[3m";
-    usart_send_bytes(USART2, (uint8_t*)clr, 4);
-    clr = "\033[4m";
-    usart_send_bytes(USART2, (uint8_t*)clr, 4);
+    usart_send_bytes(USART2, (uint8_t*)"\033[3m", 4);
+    usart_send_bytes(USART2, (uint8_t*)"\033[4m", 4);
 }
 
 void cli_normal(void)
 {
-    char* clr = "\033[23m";
-    usart_send_bytes(USART2, (uint8_t*)clr, 5);
-    clr = "\033[24m";
-    usart_send_bytes(USART2, (uint8_t*)clr, 5);
+    usart_send_bytes(USART2, (uint8_t*)"\033[23m", 5);
+    usart_send_bytes(USART2, (uint8_t*)"\033[24m", 5);
 }
 
 void cli_print(const char* string)
@@ -180,36 +172,6 @@ void cli_backspace(void)
     }
 }
 
-bool cli_is_number(const char* string)
-{
-    uint32_t i = 0;
-    while(string[i]){
-	if(string[i] < 48 || string[i] > 57){
-	    return false;
-	}
-	i++;
-    }
-    return true;
-}
-
-uint32_t cli_strlen(const char* string)
-{
-    uint32_t i = 0;
-    while(string[i]){
-	i++;
-    }
-    return i;
-}
-
-uint32_t cli_pow(const uint32_t a, const uint32_t b)
-{
-    if(b == 0){
-	return 1;
-    }else{
-	return cli_pow(a, b-1) * a;
-    }
-}
-
 void cli_tokenize(ring_buffer_t* ring_buffer, command_t tokens, char* token_length)
 {
     uint8_t token = 0;
@@ -249,8 +211,6 @@ void cli_tokenize(ring_buffer_t* ring_buffer, command_t tokens, char* token_leng
     *token_length = token;
 }
 
-// TODO: Could make parse commands return a function pointer and save the args, if we want to be able to repeat commands with enter
-
 void cli_parse_command(command_t tokens, char token_length)
 {
     if(token_length < 1){
@@ -287,7 +247,7 @@ void cli_memdump_hex(const char *args)
         return;
     }
 
-    uint32_t dec = cli_hexstring_to_dec((uint8_t *)&args[2]);
+    uint32_t dec = utils_hexstring_to_dec((uint8_t *)&args[2]);
 
     cli_dump_hex_from_address(dec);
 }
@@ -299,7 +259,7 @@ void cli_memdump_bin(const char *args)
         return;
     }
 
-    uint32_t dec = cli_hexstring_to_dec((uint8_t *)&args[2]);
+    uint32_t dec = utils_hexstring_to_dec((uint8_t *)&args[2]);
 
     cli_dump_bin_from_address(dec);
 }
@@ -337,82 +297,6 @@ void cli_print_library_help()
 
 __attribute__((weak)) void cli_print_application_help();
 
-void reverse_string(char* str, uint8_t length){
-    uint8_t left = 0;
-    uint8_t right = length - 1;
-
-    while(left < right){
-        char temp = str[left];
-        str[left] = str[right];
-        str[right] = temp;
-        left++;
-        right--;
-    }
-}
-
-bool cli_dec_to_binarystring(uint32_t dec, char *arr, uint8_t length)
-{
-    uint8_t index = 0;
-
-    for(int i = 0; i < length; i++){
-        if(dec > 0){
-            arr[index++] = (dec % 2) + 48;
-            dec /= 2;
-        }else{
-            arr[index++] = 48;
-        }
-    }
-    arr[index] = '\0';
-
-    reverse_string(arr, index);
-
-    return true;
-}
-
-bool cli_dec_to_hexstring(uint32_t dec, uint8_t *arr)
-{
-    uint32_t remainder;
-    int32_t index = 7;
-    arr[index+1] = '\0';
-
-    while(dec > 0 || index >= 0){
-	remainder = dec % 16;
-	dec /= 16;
-
-	if(remainder > 9){
-	    arr[index] = remainder + 55; // 65-70 is ASCII A-F
-	}
-	else{
-	    arr[index] = remainder + 48; // 48-57 is ASCII 0-9
-	}
-	index--;
-    }
-    return true;
-}
-
-uint32_t cli_hexstring_to_dec(uint8_t* string)
-{
-    uint8_t i = 0;
-    uint32_t result = 0;
-    uint32_t hexlen = cli_strlen((char*) string) - 1;
-
-    while(string[i]){
-	if(string[i] >= '0' && string[i] <= '9'){
-	    result += (string[i] - 48) * cli_pow(16, hexlen);
-	}else if(string[i] >= 'a' && string[i] <= 'f'){
-	    result += (string[i] - 87) * cli_pow(16, hexlen);
-	}else if(string[i] >= 'A' && string[i] <= 'F'){
-	    result += (string[i] - 55) * cli_pow(16, hexlen);
-	}else{
-	    cli_print("Error: Could not convert hex to decimal\r\n");
-	    return 0;
-	}
-	i++;
-	hexlen--;
-    }
-    return result;
-}
-
 void cli_dump_hex_from_address(uint32_t address)
 {
     uint8_t hex[9] = {0U};
@@ -422,7 +306,7 @@ void cli_dump_hex_from_address(uint32_t address)
         usart_send_byte(USART2, '0');
         usart_send_byte(USART2, 'x');
 
-        if(cli_dec_to_hexstring(M32(address), hex)){
+        if(utils_dec_to_hexstring(M32(address), hex)){
             usart_send_bytes(USART2, hex, 8);
         }
     /*}else{*/
@@ -435,7 +319,7 @@ void cli_dump_bin_from_address(uint32_t address)
     uint8_t bin[33] = {48};
 
     /*if(memorymap_is_valid_address(address)){*/
-        if(cli_dec_to_binarystring(M32(address),(char*) bin, 32)){
+        if(utils_dec_to_binarystring(M32(address),(char*) bin, 32)){
             cli_print(" -----------------------------------------------");
             cli_newline();
             for(int i = 31; i >= 16; i--){
@@ -530,8 +414,6 @@ void cli_process_input(void){
 		case USART_STATE_ESC:
 		    if(byte == '['){
 			usart_state = USART_STATE_BRACKET;
-		    } else if(byte == 'p') {
-			cli_print("is this altp");
 		    } else {
 			usart_state = USART_STATE_IDLE;
 		    }
@@ -543,7 +425,7 @@ void cli_process_input(void){
 		    switch(byte){
 			case 'A':
 			    if(command_index >= 0){
-				uint8_t len = cli_strlen(command_history[command_index][0]);
+				uint8_t len = utils_strlen(command_history[command_index][0]);
 				for(int i = 0; i < len; i++){
 				    cli_backspace();
 				}

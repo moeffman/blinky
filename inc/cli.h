@@ -14,7 +14,6 @@ typedef struct ring_buffer_t ring_buffer_t;
 
 typedef char command_t[COMMAND_MAX_AMOUNT][COMMAND_MAX_LENGTH];
 
-// TODO: Maybe command should be char**, that would allow for multiple args, I think
 typedef struct{
     const char* command;
     void (*handler)(const char* args);
@@ -42,12 +41,6 @@ void cli_newline(void);
 
 void cli_backspace(void);
 
-uint32_t cli_strlen(const char *string);
-
-uint32_t cli_string_to_number(const char* string);
-
-uint32_t cli_pow(const uint32_t a, const uint32_t b);
-
 void cli_tokenize(ring_buffer_t* ring_buffer, command_t tokens, char* token_length);
 
 void cli_parse_command(command_t tokens, char token_length);
@@ -69,14 +62,6 @@ void cli_print_library_help();
 void cli_print_application_help();
 
 void cli_print_welcome_message(void);
-
-void reverse_string(char* string, uint8_t length);
-
-bool cli_dec_to_binarystring(uint32_t dec, char *arr, uint8_t length);
-
-bool cli_dec_to_hexstring(uint32_t dec, uint8_t *arr);
-
-uint32_t cli_hexstring_to_dec(uint8_t* hex);
 
 void cli_dump_hex_from_address(uint32_t address);
 
