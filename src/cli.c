@@ -39,51 +39,33 @@ void cli_init(int (*restart_function)(void))
     // Setting the restart_handler, used by the command "rs"
     restart_handler = restart_function;
 
-    // Creating ring_buffers
     ring_buffer_create(&ring_buffer_temp, data_buffer_temp, RING_BUFFER_SIZE);
     ring_buffer_create(&ring_buffer_data, data_buffer, RING_BUFFER_SIZE);
 
-    if(!(RCC->IOPENR & RCC_IO_GPIOA)){
-	RCC->IOPENR |= RCC_IO_GPIOA;
-    }
-    // Using GPIOA_2 and GPIOA_3
+    RCC->IOPENR |= RCC_IO_GPIOA;
+
+    // GPIOA 2 & 3 AF1 for USART2
     gpio_config_t cfg;
     cfg.mode = GPIO_MODER_AF;
     cfg.speed = GPIO_OSPEEDR_HIGH;
     cfg.af = GPIO_AF1;
-
     gpio_set(GPIOA, &cfg, BIT2 | BIT3);
 
-    // Enable USART clock
     RCC->APBENR1 |= RCC_APB1_USART2;
-
-    // RXNEIE enabled
     USART2->CR1 |= USART_CR1_RXNEIE;
-
-    // RE enabled
     USART2->CR1 |= USART_CR1_RE;
-
-    // TE enabled
     USART2->CR1 |= USART_CR1_TE;
-
     // BRR USARTDIV = FREQ/BAUDRATE
     // 16Mhz / 115200 = 139 = 0x8B
     USART2->BRR = 0x8B;
-
-    // USART enabled
     USART2->CR1 |= USART_CR1_UE;
-
-    // Enable USART in NVIC
     NVIC->ISER0 = NVIC_USART2_LPUART2;
 }
 
 void cli_deinit(void)
 {
     // Reset GPIOA
-    if(!(RCC->IOPENR & RCC_IO_GPIOA)){
-	RCC->IOPENR |= RCC_IO_GPIOA;
-    }
-
+    RCC->IOPENR |= RCC_IO_GPIOA;
     gpio_config_t cfg;
     gpio_config_reset(&cfg);
     gpio_set(GPIOA, &cfg, 0xFFFF);
@@ -91,11 +73,8 @@ void cli_deinit(void)
 
     // Reset USART
     RCC->APBENR1 |= RCC_APB1_USART2;
-
     USART2->CR1 = 0;
     USART2->BRR = 0;
-
-    // Disable USART in NVIC
     NVIC->ICER0 = NVIC_USART2_LPUART2;
 }
 

@@ -40,14 +40,14 @@ static uint8_t ir_to_command[70] = {
 
 static command_callback_t ir_commands[20];
 
-void irdecoder_set_commands(command_callback_t* commands, uint8_t count)
+void irdecoder_set_commands(const command_callback_t* commands, uint8_t count)
 {
     for(uint8_t i = 0; i < count; i++){
 	ir_commands[i] = commands[i];
     }
 }
 
-void irdecoder_process()
+void irdecoder_process(void)
 {
     if(command != 0xFF){
 	uint8_t i = ir_to_command[command];
@@ -60,90 +60,54 @@ void irdecoder_process()
 
 void irdecoder_init(void)
 {
-    if(!(RCC->IOPENR & RCC_IO_GPIOD)){
-	RCC->IOPENR |= RCC_IO_GPIOD;
-    }
+    RCC->IOPENR |= RCC_IO_GPIOD;
 
     gpio_config_t cfg;
     gpio_config_reset(&cfg);
-
     cfg.mode = GPIO_MODER_INPUT;
     cfg.pupd = GPIO_PUPDR_PULLUP;
-
     gpio_set(GPIOD, &cfg, PIN9);
 
     EXTI->EXTICR3 &= ~EXTI_CR3_EXTI1_MSK;
     EXTI->EXTICR3 |= EXTI_CR3_EXTI1(0x3); // PD9 on EXTI9
-
     EXTI->RTSR1 |= EXTI_RTSR1_RT9; // Enabling rising edge trigger
     EXTI->FTSR1 |= EXTI_FTSR1_FT9; // Enabling falling edge trigger
-
     EXTI->IMR1 |= EXTI_IMR1_IM9; // Unmask interrupt
-
-    // Enable EXTI4_15 in NVIC
     NVIC->ISER0 = NVIC_EXTI4_15;
 
     // TIMER
-    if(!(RCC->APBENR2 & RCC_APB2_TIM16)){
-	RCC->APBENR2 |= RCC_APB2_TIM16;
-    }
-
-    // Disable timer
+    RCC->APBENR2 |= RCC_APB2_TIM16;
     TIM16->CR1 = 0;
-
-    // Prescaler set to 31 (16MHz / 500KHz)-1
     TIM16->PSC = 0x1F;
-
-    // Auto-reload value set to 3500, making it fire the interrupt every 7 ms
     TIM16->ARR = 3500;
-
-    // Update interrupt enabled
     TIM16->DIER |= TIM_DIER_UIE;
-
-    // Re-initialize counter
     TIM16->EGR |= TIM_EGR_UG;
-
     TIM16->SR = 0;
-
-    // Enable TIM16 in NVIC
     NVIC->ISER0 = NVIC_TIM16_FDCAN_IT0;
 }
 
 void irdecoder_deinit(void)
 {
-    if(!(RCC->IOPENR & RCC_IO_GPIOD)){
-	RCC->IOPENR |= RCC_IO_GPIOD;
-    }
+    RCC->IOPENR |= RCC_IO_GPIOD;
 
     gpio_config_t cfg;
     gpio_config_reset(&cfg);
-
     gpio_set(GPIOD, &cfg, 0xFFFF); // Setting GPIOD to reset state
 
     EXTI->EXTICR3 &= ~EXTI_CR3_EXTI1_MSK; // Disable PD9 EXTI interrupt
-
     EXTI->RTSR1 &= ~EXTI_RTSR1_RT9; // Disabling rising edge trigger
     EXTI->FTSR1 &= ~EXTI_FTSR1_FT9; // Disabling falling edge trigger
-
     EXTI->IMR1 &= ~EXTI_IMR1_IM9; // Mask interrupt
-
-    // Disable EXTI4_15 in NVIC
     NVIC->ICER0 = NVIC_EXTI4_15;
 
     // TIMER
-    if(!(RCC->APBENR2 & RCC_APB2_TIM16)){
-	RCC->APBENR2 |= RCC_APB2_TIM16;
-    }
-
-    // Disable timer
+    RCC->APBENR2 |= RCC_APB2_TIM16;
     TIM16->CR1 = 0;
     TIM16->PSC = 0;
     TIM16->ARR = 0xFFFF;
     TIM16->DIER = 0;
     TIM16->EGR = 0;
     TIM16->SR = 0;
-
-    // Disable TIM16 in NVIC
     NVIC->ICER0 = NVIC_TIM16_FDCAN_IT0;
 }
 
@@ -162,10 +126,7 @@ void EXTI4_15_IRQHandler(void)
     if(EXTI->RPR1 & EXTI_RPR1_RPIF9){
 	EXTI->RPR1 = EXTI_RPR1_RPIF9;
 
-	// Enable timer
 	TIM16->CR1 |= TIM_CR1_CEN;
-
-	// Reset count
 	*(uint16_t*)&TIM16->CNT = 0;
     }
 }
@@ -205,14 +166,4 @@ void TIM16_FDCAN_IT0_IRQHandler(void)
 	    }
 	}
     }
-}
-
-uint8_t ir_get_command(void)
-{
-    return command;
-}
-
-void ir_reset_command(void)
-{
-    command = 0xFF;
 }

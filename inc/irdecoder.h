@@ -40,11 +40,8 @@ void irdecoder_init(void);
 
 void irdecoder_deinit(void);
 
-void irdecoder_set_commands(command_callback_t* commands, uint8_t count);
+void irdecoder_set_commands(const command_callback_t* commands, uint8_t count);
 
 void irdecoder_process(void);
 
-uint8_t ir_get_command(void);
-
-void ir_reset_command(void);
 #endif

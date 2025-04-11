@@ -6,10 +6,10 @@
 #include "irdecoder.h"
 
 // Library headers
-#include "memorymap.h"
 #include "syscfg.h"
 #include "cli.h"
 #include "rcc.h"
+#include "usart.h"
 #include "utils.h"
 
 // Standard library headers
@@ -103,12 +103,8 @@ static void jump_to_bootloader(const char* args)
     uint32_t* bl_vector = (uint32_t*)(0x08000000);
     uint32_t* sram_vector = (uint32_t*)(0x20000000);
 
-    // RCC enable SYSCFG
-    if(!(RCC->APBENR2 & BIT0)){
-	RCC->APBENR2 |= BIT0;
-    }
-
-    // SYSCFG_CFGR1 MEM_MODE
+    RCC->APBENR2 |= RCC_APB2_SYSCFG;
+    // Mirroring RAM onto 0x00000000
     SYSCFG_CFGR1 &= ~0x3;
 
     for(uint32_t i = 0; i < 0xC0 / 4; i++){
@@ -141,7 +137,6 @@ static void jump_to_bootloader(const char* args)
     bl_reset_handler();
 }
 
-// Should return true if command is found, false otherwise
 bool cli_parse_application_command(command_t tokens, char token_length)
 {
     if(token_length < 1){
